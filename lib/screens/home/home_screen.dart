@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_dimensions.dart';
+import '../../models/document_file.dart';
+import '../../services/file_manager_service.dart';
 import '../../services/scanner_service.dart';
+import '../files/pdf_viewer_screen.dart';
 import '../paywall/paywall_screen.dart';
 import '../scan/scan_preview_screen.dart';
 
@@ -16,6 +19,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String _selectedCategory = 'All';
   final TextEditingController _searchController = TextEditingController();
+  List<DocumentFile> _recentFiles = [];
 
   final List<String> _categories = const [
     'All',
@@ -26,33 +30,20 @@ class _HomeScreenState extends State<HomeScreen> {
     'Contracts',
   ];
 
-  // Demo recent documents for UI state (in Step 5, this connects to local storage)
-  final List<RecentDocItem> _recentDocs = [
-    RecentDocItem(
-      title: 'Tax_Invoice_2025.pdf',
-      date: 'Today, 2:45 PM',
-      size: '1.4 MB',
-      pageCount: 3,
-      tag: 'Invoices',
-      isFavorite: true,
-    ),
-    RecentDocItem(
-      title: 'Aadhaar_ID_Front_Back.pdf',
-      date: 'Yesterday, 6:12 PM',
-      size: '890 KB',
-      pageCount: 1,
-      tag: 'ID Cards',
-      isFavorite: false,
-    ),
-    RecentDocItem(
-      title: 'Rental_Agreement_Signed.pdf',
-      date: 'Oct 1, 2025',
-      size: '3.2 MB',
-      pageCount: 6,
-      tag: 'Contracts',
-      isFavorite: true,
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadRecentDocuments();
+  }
+
+  Future<void> _loadRecentDocuments() async {
+    final files = await FileManagerService.loadAllFiles();
+    if (mounted) {
+      setState(() {
+        _recentFiles = files.where((f) => !f.isFolder).toList();
+      });
+    }
+  }
 
   void _openPaywall() {
     Navigator.of(context).push(
@@ -66,13 +57,14 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mode == 'Gallery Import') {
       final picked = await ScannerService.pickImagesFromGallery();
       if (picked.isNotEmpty && mounted) {
-        Navigator.of(context).push(
+        await Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => ScanPreviewScreen(
               initialImagePaths: picked,
             ),
           ),
         );
+        _loadRecentDocuments();
       }
       return;
     }
@@ -80,7 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final pageLimit = mode == 'ID Card Scan' ? 2 : 50;
     final result = await ScannerService.startDocumentScan(pageLimit: pageLimit);
     if (result.isSuccess && result.imagePaths.isNotEmpty && mounted) {
-      Navigator.of(context).push(
+      await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => ScanPreviewScreen(
             initialImagePaths: result.imagePaths,
@@ -88,6 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       );
+      _loadRecentDocuments();
     }
   }
 
@@ -99,9 +92,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredDocs = _selectedCategory == 'All'
-        ? _recentDocs
-        : _recentDocs.where((doc) => doc.tag == _selectedCategory).toList();
+    final query = _searchController.text.trim().toLowerCase();
+    final filteredDocs = _recentFiles.where((doc) {
+      if (query.isNotEmpty && !doc.title.toLowerCase().contains(query)) {
+        return false;
+      }
+      if (_selectedCategory != 'All' && doc.categoryTag != _selectedCategory) {
+        return false;
+      }
+      return true;
+    }).toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6FBF8),
@@ -518,7 +518,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDocCard(RecentDocItem doc) {
+  Widget _buildDocCard(DocumentFile doc) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
@@ -535,15 +535,26 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        onTap: () async {
+          await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => PdfViewerScreen(
+                document: doc,
+                onFileChanged: _loadRecentDocuments,
+              ),
+            ),
+          );
+          _loadRecentDocuments();
+        },
         leading: Container(
           width: 42,
           height: 42,
           decoration: BoxDecoration(
-            color: const Color(0xFFFEE2E2),
+            color: AppColors.primarySoftTint,
             borderRadius: BorderRadius.circular(10),
           ),
           child: const Center(
-            child: Icon(Icons.picture_as_pdf_rounded, color: Color(0xFFDC2626), size: 22),
+            child: Icon(Icons.picture_as_pdf_rounded, color: AppColors.primary, size: 22),
           ),
         ),
         title: Text(
@@ -559,12 +570,12 @@ class _HomeScreenState extends State<HomeScreen> {
         subtitle: Row(
           children: [
             Text(
-              doc.date,
+              doc.formattedDate,
               style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
             ),
             const Text(' • ', style: TextStyle(color: AppColors.textMuted)),
             Text(
-              '${doc.pageCount} ${doc.pageCount == 1 ? "page" : "pages"} (${doc.size})',
+              doc.formattedSize,
               style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
             ),
           ],
@@ -572,19 +583,37 @@ class _HomeScreenState extends State<HomeScreen> {
         trailing: PopupMenuButton<String>(
           icon: const Icon(Icons.more_vert_rounded, color: AppColors.textSecondary, size: 20),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          onSelected: (value) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('$value on ${doc.title} (Step 5)'),
-                backgroundColor: AppColors.primary,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+          onSelected: (value) async {
+            if (value == 'Share') {
+              FileManagerService.shareFile(doc.path, subject: doc.title);
+            } else if (value == 'Delete') {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                  title: Text('Delete "${doc.title}"?'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white),
+                      child: const Text('Delete'),
+                    ),
+                  ],
+                ),
+              );
+              if (confirm == true) {
+                await FileManagerService.deleteItem(doc.path);
+                _loadRecentDocuments();
+              }
+            } else if (value == 'Favorite') {
+              await FileManagerService.toggleFavorite(doc.path);
+              _loadRecentDocuments();
+            }
           },
           itemBuilder: (context) => [
             const PopupMenuItem(value: 'Share', child: Row(children: [Icon(Icons.share_rounded, size: 18), SizedBox(width: 10), Text('Share PDF')])),
-            const PopupMenuItem(value: 'Rename', child: Row(children: [Icon(Icons.edit_rounded, size: 18), SizedBox(width: 10), Text('Rename')])),
-            const PopupMenuItem(value: 'Lock', child: Row(children: [Icon(Icons.lock_outline_rounded, size: 18), SizedBox(width: 10), Text('Set Password')])),
+            PopupMenuItem(value: 'Favorite', child: Row(children: [Icon(doc.isFavorite ? Icons.star_rounded : Icons.star_border_rounded, size: 18, color: AppColors.premiumStart), const SizedBox(width: 10), Text(doc.isFavorite ? 'Unfavorite' : 'Favorite')])),
             const PopupMenuItem(value: 'Delete', child: Row(children: [Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red), SizedBox(width: 10), Text('Delete', style: TextStyle(color: Colors.red))])),
           ],
         ),
@@ -613,7 +642,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 14),
             const Text(
-              'No documents in this category',
+              'No documents found',
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
             ),
             const SizedBox(height: 4),
@@ -626,22 +655,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-}
-
-class RecentDocItem {
-  final String title;
-  final String date;
-  final String size;
-  final int pageCount;
-  final String tag;
-  final bool isFavorite;
-
-  const RecentDocItem({
-    required this.title,
-    required this.date,
-    required this.size,
-    required this.pageCount,
-    required this.tag,
-    required this.isFavorite,
-  });
 }

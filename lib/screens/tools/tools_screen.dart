@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_dimensions.dart';
 import '../paywall/paywall_screen.dart';
+import 'compress_pdf_screen.dart';
+import 'image_to_pdf_screen.dart';
+import 'merge_pdf_screen.dart';
+import 'split_pdf_screen.dart';
 
 /// Tools Screen for ScanPro featuring categorized PDF utilities, converters, and AI tools.
 class ToolsScreen extends StatefulWidget {
@@ -26,10 +30,29 @@ class _ToolsScreenState extends State<ToolsScreen> {
   void _onToolTapped(ToolItem tool) {
     if (tool.isPro) {
       _openPaywall();
+      return;
+    }
+
+    if (tool.title == 'Image to PDF') {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const ImageToPdfScreen()),
+      );
+    } else if (tool.title == 'Merge PDF') {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const MergePdfScreen()),
+      );
+    } else if (tool.title == 'Split PDF') {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const SplitPdfScreen()),
+      );
+    } else if (tool.title == 'Compress PDF') {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const CompressPdfScreen()),
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${tool.title} will execute in Step 6 (PDF Tools)'),
+          content: Text('${tool.title} will be available in next update'),
           backgroundColor: AppColors.primary,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(

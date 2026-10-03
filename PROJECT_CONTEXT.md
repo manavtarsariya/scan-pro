@@ -49,5 +49,5 @@ Free: daily scan limit, watermark, ads. Premium: unlimited, no ads, no watermark
 10. If something is uncertain (package API changed, platform issue), say you are unsure instead of guessing.
 
 ## Build order
-1 Theme + bottom nav + empty screens -> 2 Onboarding, permission, paywall (UI only) -> 3 Home + Tools UI -> 4 Scan flow (camera, crop, filter, save PDF) [DONE] -> 5 My Files -> 6 Image to PDF, Merge, Split, Compress -> 7 RevenueCat + AdMob -> 8 Remaining features.
-Current step: 5 (Next: My Files screen & file manager)
+1 Theme + bottom nav + empty screens -> 2 Onboarding, permission, paywall (UI only) -> 3 Home + Tools UI -> 4 Scan flow (camera, crop, filter, save PDF) [DONE] -> 5 My Files (File Manager, Folders, PDF preview) [DONE] -> 6 Image to PDF, Merge, Split, Compress [DONE] -> 7 RevenueCat + AdMob -> 8 Remaining features.
+Current step: 7 (Next: RevenueCat Subscriptions + AdMob Monetization)sambhal 
