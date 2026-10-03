@@ -3,9 +3,14 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_dimensions.dart';
 import '../paywall/paywall_screen.dart';
 import 'compress_pdf_screen.dart';
+import 'esign_screen.dart';
 import 'image_to_pdf_screen.dart';
+import 'lock_pdf_screen.dart';
 import 'merge_pdf_screen.dart';
+import 'organize_pages_screen.dart';
 import 'split_pdf_screen.dart';
+import 'unlock_pdf_screen.dart';
+import 'watermark_screen.dart';
 
 /// Tools Screen for ScanPro featuring categorized PDF utilities, converters, and AI tools.
 class ToolsScreen extends StatefulWidget {
@@ -48,6 +53,26 @@ class _ToolsScreenState extends State<ToolsScreen> {
     } else if (tool.title == 'Compress PDF') {
       Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => const CompressPdfScreen()),
+      );
+    } else if (tool.title == 'Lock PDF') {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const LockPdfScreen()),
+      );
+    } else if (tool.title == 'Unlock PDF') {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const UnlockPdfScreen()),
+      );
+    } else if (tool.title == 'Watermark & Numbers') {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const WatermarkScreen()),
+      );
+    } else if (tool.title == 'eSign Document') {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const EsignScreen()),
+      );
+    } else if (tool.title == 'Organize Pages') {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const OrganizePagesScreen()),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -250,12 +275,16 @@ class _ToolsScreenState extends State<ToolsScreen> {
                           color: const Color(0xFFD97706),
                         ),
                         ToolItem(
+                          title: 'Watermark & Numbers',
+                          subtitle: 'Add custom watermark stamps and page numbers',
+                          icon: Icons.branding_watermark_rounded,
+                          color: const Color(0xFFD97706),
+                        ),
+                        ToolItem(
                           title: 'eSign Document',
                           subtitle: 'Draw signature and place legal stamp',
                           icon: Icons.draw_rounded,
                           color: const Color(0xFFD97706),
-                          isPro: true,
-                          badge: 'PRO',
                         ),
                       ],
                     ),
