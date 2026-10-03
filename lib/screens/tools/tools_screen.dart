@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_dimensions.dart';
 import '../paywall/paywall_screen.dart';
+import '../scan/id_card_scan_screen.dart';
 import 'compress_pdf_screen.dart';
 import 'esign_screen.dart';
 import 'image_to_pdf_screen.dart';
 import 'lock_pdf_screen.dart';
 import 'merge_pdf_screen.dart';
 import 'organize_pages_screen.dart';
+import 'qr_scanner_screen.dart';
 import 'split_pdf_screen.dart';
 import 'unlock_pdf_screen.dart';
 import 'watermark_screen.dart';
@@ -73,6 +75,14 @@ class _ToolsScreenState extends State<ToolsScreen> {
     } else if (tool.title == 'Organize Pages') {
       Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => const OrganizePagesScreen()),
+      );
+    } else if (tool.title == 'ID Card 2-Side') {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const IdCardScanScreen()),
+      );
+    } else if (tool.title == 'QR & Barcode Scanner') {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const QrScannerScreen()),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -252,6 +262,27 @@ class _ToolsScreenState extends State<ToolsScreen> {
                           color: const Color(0xFF0284C7),
                           isPro: true,
                           badge: 'PRO',
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 20),
+                    _buildCategorySection(
+                      title: 'Smart Scanners',
+                      icon: Icons.document_scanner_rounded,
+                      tools: [
+                        ToolItem(
+                          title: 'ID Card 2-Side',
+                          subtitle: 'Scan front + back and merge on single A4',
+                          icon: Icons.badge_rounded,
+                          color: const Color(0xFF0D9488),
+                          badge: '2-in-1',
+                        ),
+                        ToolItem(
+                          title: 'QR & Barcode Scanner',
+                          subtitle: 'Instant camera scan for QR, codes & URLs',
+                          icon: Icons.qr_code_scanner_rounded,
+                          color: const Color(0xFF0D9488),
                         ),
                       ],
                     ),

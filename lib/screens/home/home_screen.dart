@@ -6,6 +6,7 @@ import '../../services/file_manager_service.dart';
 import '../../services/scanner_service.dart';
 import '../files/pdf_viewer_screen.dart';
 import '../paywall/paywall_screen.dart';
+import '../scan/id_card_scan_screen.dart';
 import '../scan/scan_preview_screen.dart';
 
 /// Home Screen for ScanPro featuring Quick Actions, Search & Filters, and Recent Documents.
@@ -69,8 +70,15 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    final pageLimit = mode == 'ID Card Scan' ? 2 : 50;
-    final result = await ScannerService.startDocumentScan(pageLimit: pageLimit);
+    if (mode == 'ID Card Scan') {
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const IdCardScanScreen()),
+      );
+      _loadRecentDocuments();
+      return;
+    }
+
+    final result = await ScannerService.startDocumentScan(pageLimit: 50);
     if (result.isSuccess && result.imagePaths.isNotEmpty && mounted) {
       await Navigator.of(context).push(
         MaterialPageRoute(

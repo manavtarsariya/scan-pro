@@ -101,6 +101,102 @@ class ScannerService {
     return outputFile;
   }
 
+  /// Creates a single-page A4 PDF containing both Front and Back sides of an ID Card.
+  static Future<File> createIdCardPdf({
+    required String frontImagePath,
+    required String backImagePath,
+    required String fileName,
+  }) async {
+    final pdf = pw.Document();
+
+    final frontBytes = await File(frontImagePath).readAsBytes();
+    final backBytes = await File(backImagePath).readAsBytes();
+
+    final frontImage = pw.MemoryImage(frontBytes);
+    final backImage = pw.MemoryImage(backBytes);
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        build: (pw.Context context) {
+          return pw.Column(
+            mainAxisAlignment: pw.MainAxisAlignment.center,
+            crossAxisAlignment: pw.CrossAxisAlignment.center,
+            children: [
+              // Front Side Label & Card
+              pw.Container(
+                alignment: pw.Alignment.center,
+                child: pw.Text(
+                  'FRONT SIDE',
+                  style: pw.TextStyle(
+                    fontSize: 10,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.grey700,
+                  ),
+                ),
+              ),
+              pw.SizedBox(height: 6),
+              pw.Container(
+                height: 230,
+                width: 360,
+                decoration: pw.BoxDecoration(
+                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
+                  border: pw.Border.all(color: PdfColors.grey400, width: 1),
+                ),
+                child: pw.ClipRRect(
+                  horizontalRadius: 10,
+                  verticalRadius: 10,
+                  child: pw.Center(
+                    child: pw.Image(frontImage, fit: pw.BoxFit.contain),
+                  ),
+                ),
+              ),
+
+              pw.SizedBox(height: 40),
+
+              // Back Side Label & Card
+              pw.Container(
+                alignment: pw.Alignment.center,
+                child: pw.Text(
+                  'BACK SIDE',
+                  style: pw.TextStyle(
+                    fontSize: 10,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.grey700,
+                  ),
+                ),
+              ),
+              pw.SizedBox(height: 6),
+              pw.Container(
+                height: 230,
+                width: 360,
+                decoration: pw.BoxDecoration(
+                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
+                  border: pw.Border.all(color: PdfColors.grey400, width: 1),
+                ),
+                child: pw.ClipRRect(
+                  horizontalRadius: 10,
+                  verticalRadius: 10,
+                  child: pw.Center(
+                    child: pw.Image(backImage, fit: pw.BoxFit.contain),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    final outputDir = await getApplicationDocumentsDirectory();
+    final formattedName = fileName.endsWith('.pdf') ? fileName : '$fileName.pdf';
+    final outputFile = File('${outputDir.path}/$formattedName');
+
+    await outputFile.writeAsBytes(await pdf.save());
+    return outputFile;
+  }
+
   /// Generates a default timestamped file name (e.g. Scan_20251003_1822.pdf).
   static String generateDefaultFileName() {
     final now = DateTime.now();
