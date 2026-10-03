@@ -30,8 +30,8 @@ Free: daily scan limit, watermark, ads. Premium: unlimited, no ads, no watermark
 
 ## Design
 - Designs are in Google Stitch (use the Stitch MCP to fetch screens, colors and layout; do not guess the UI).
-- Theme: very light pastel MINT. No blue, no indigo, no dark green.
-  Primary #A8EBC9, pressed #86DDB0, soft tint #E6FAF0, gradient #CFF7E1 to #8EE4B6, background #F7FEFA, surface #FFFFFF, border #E3F3EA, text #12141D, secondary text #6B7280, text on mint #0F3D2A, links #2E9E71.
+- Theme: Deep rich EMERALD (#064E3B).
+  Primary #064E3B, pressed #04382A, light accent #059669, soft tint #E8F5EE, gradient #064E3B to #0E7057, background #F8FAFC, surface #FFFFFF, border #E2E8F0, text #0F172A, secondary text #475569, text on primary #FFFFFF, links #047857.
   Premium: gold gradient #FFB800 to #FF7A00. AI: violet #7C4DFF. Dark: bg #0F1A15, surface #18261F.
 - Font Plus Jakarta Sans. Cards 20px radius, CTA 56px tall, bottom nav 4 tabs (Home, Tools, Files, Settings) + big circular center Scan button.
 - Put all colors, text styles and spacing in ONE theme file. Never hardcode colors inside screens.
@@ -50,4 +50,4 @@ Free: daily scan limit, watermark, ads. Premium: unlimited, no ads, no watermark
 
 ## Build order
 1 Theme + bottom nav + empty screens -> 2 Onboarding, permission, paywall (UI only) -> 3 Home + Tools UI -> 4 Scan flow (camera, crop, filter, save PDF) -> 5 My Files -> 6 Image to PDF, Merge, Split, Compress -> 7 RevenueCat + AdMob -> 8 Remaining features.
-Current step: 1
+Current step: 4
