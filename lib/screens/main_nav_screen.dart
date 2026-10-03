@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../core/constants/app_colors.dart';
 import '../core/constants/app_dimensions.dart';
+import '../services/scanner_service.dart';
+import 'scan/scan_preview_screen.dart';
 import 'home/home_screen.dart';
 import 'tools/tools_screen.dart';
 import 'files/files_screen.dart';
@@ -30,17 +32,18 @@ class _MainNavScreenState extends State<MainNavScreen> {
     });
   }
 
-  void _onScanTapped() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Camera Scanner will activate here (Step 4)'),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+  Future<void> _onScanTapped() async {
+    final result = await ScannerService.startDocumentScan();
+    if (result.isSuccess && result.imagePaths.isNotEmpty && mounted) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ScanPreviewScreen(
+            initialImagePaths: result.imagePaths,
+            initialPdfPath: result.pdfPath,
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
 
   @override

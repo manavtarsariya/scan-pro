@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_dimensions.dart';
+import '../../services/scanner_service.dart';
 import '../paywall/paywall_screen.dart';
+import '../scan/scan_preview_screen.dart';
 
 /// Home Screen for ScanPro featuring Quick Actions, Search & Filters, and Recent Documents.
 class HomeScreen extends StatefulWidget {
@@ -60,17 +62,33 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _onScanTapped(String mode) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$mode will activate in Step 4 (Scan Flow)'),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+  Future<void> _onScanTapped(String mode) async {
+    if (mode == 'Gallery Import') {
+      final picked = await ScannerService.pickImagesFromGallery();
+      if (picked.isNotEmpty && mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ScanPreviewScreen(
+              initialImagePaths: picked,
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
+    final pageLimit = mode == 'ID Card Scan' ? 2 : 50;
+    final result = await ScannerService.startDocumentScan(pageLimit: pageLimit);
+    if (result.isSuccess && result.imagePaths.isNotEmpty && mounted) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ScanPreviewScreen(
+            initialImagePaths: result.imagePaths,
+            initialPdfPath: result.pdfPath,
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
 
   @override
