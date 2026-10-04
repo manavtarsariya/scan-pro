@@ -46,6 +46,7 @@ dependencies:
   syncfusion_flutter_pdf: ^35.1.37
   image: ^4.10.1
   mobile_scanner: ^7.4.2
+  pdfx: ^2.6.0
 
 dev_dependencies:
   flutter_test:

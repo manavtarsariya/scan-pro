@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
@@ -6,6 +7,7 @@ import 'package:pdf/pdf.dart' as pw_pdf;
 import 'package:pdf/widgets.dart' as pw;
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:intl/intl.dart';
+import 'package:pdfx/pdfx.dart' as pdfx;
 
 /// Offline Service for PDF Toolkit operations: Merge, Split, Compress, and Image-to-PDF.
 class PdfToolkitService {
@@ -351,41 +353,134 @@ class PdfToolkitService {
     }
   }
 
-  /// Reorganizes page sequence and rotates individual pages of a PDF.
+  /// Reorganizes page sequence and rotates individual pages of a PDF with pixel-perfect alignment.
   static Future<File?> organizePages({
     required String sourcePdfPath,
     required List<int> newPageOrder,
     required Map<int, int> pageRotations,
     required String outputFileName,
+    List<OrganizePageModel>? detailedPages,
   }) async {
     try {
       final sourceFile = File(sourcePdfPath);
-      if (!await sourceFile.exists()) return null;
+      PdfDocument? loadedDoc;
+      if (await sourceFile.exists()) {
+        final sourceBytes = await sourceFile.readAsBytes();
+        loadedDoc = PdfDocument(inputBytes: sourceBytes);
+      }
 
-      final sourceBytes = await sourceFile.readAsBytes();
-      final loadedDoc = PdfDocument(inputBytes: sourceBytes);
       final outputDoc = PdfDocument();
+      outputDoc.pageSettings.margins.all = 0;
 
-      for (final pageNum in newPageOrder) {
-        final zeroIndex = pageNum - 1;
-        if (zeroIndex >= 0 && zeroIndex < loadedDoc.pages.count) {
-          final template = loadedDoc.pages[zeroIndex].createTemplate();
-          final newPage = outputDoc.pages.add();
+      if (detailedPages != null && detailedPages.isNotEmpty) {
+        for (final item in detailedPages) {
+          final rot = (item.rotation % 360 + 360) % 360;
 
-          final rotation = pageRotations[pageNum] ?? 0;
-          if (rotation == 90) {
-            newPage.rotation = PdfPageRotateAngle.rotateAngle90;
-          } else if (rotation == 180) {
-            newPage.rotation = PdfPageRotateAngle.rotateAngle180;
-          } else if (rotation == 270) {
-            newPage.rotation = PdfPageRotateAngle.rotateAngle270;
+          if (item.isInsertedImage && item.imagePath != null) {
+            final imgFile = File(item.imagePath!);
+            if (await imgFile.exists()) {
+              final imgBytes = await imgFile.readAsBytes();
+              final bitmap = PdfBitmap(imgBytes);
+
+              final newPage = outputDoc.pages.add();
+              final pW = newPage.size.width;
+              final pH = newPage.size.height;
+
+              final imgW = bitmap.width.toDouble();
+              final imgH = bitmap.height.toDouble();
+
+              final isQuarterTurn = (rot == 90 || rot == 270);
+              final boundingW = isQuarterTurn ? imgH : imgW;
+              final boundingH = isQuarterTurn ? imgW : imgH;
+
+              // Proportional scale ensuring photo is NEVER cut off and fits available bounds
+              final scale = math.min(pW / boundingW, pH / boundingH);
+              final drawW = imgW * scale;
+              final drawH = imgH * scale;
+
+              final g = newPage.graphics;
+              final state = g.save();
+              // 1. Move pivot to exact center of page
+              g.translateTransform(pW / 2, pH / 2);
+              // 2. Rotate around center
+              if (rot != 0) {
+                g.rotateTransform(rot.toDouble());
+              }
+              // 3. Center image at pivot
+              g.translateTransform(-drawW / 2, -drawH / 2);
+              // 4. Draw image with preserved aspect ratio
+              g.drawImage(bitmap, Rect.fromLTWH(0, 0, drawW, drawH));
+              g.restore(state);
+            }
+          } else if (item.isBlankPage) {
+            outputDoc.pages.add();
+          } else if (loadedDoc != null) {
+            final zeroIndex = item.originalPageIndex - 1;
+            if (zeroIndex >= 0 && zeroIndex < loadedDoc.pages.count) {
+              final srcPage = loadedDoc.pages[zeroIndex];
+              final srcSize = srcPage.size;
+              final template = srcPage.createTemplate();
+
+              final newPage = outputDoc.pages.add();
+              final pW = newPage.size.width;
+              final pH = newPage.size.height;
+
+              final isQuarterTurn = (rot == 90 || rot == 270);
+              final boundingW = isQuarterTurn ? srcSize.height : srcSize.width;
+              final boundingH = isQuarterTurn ? srcSize.width : srcSize.height;
+
+              // Proportional scale ensuring template is NEVER cut off and fits available bounds
+              final scale = math.min(pW / boundingW, pH / boundingH);
+              final drawW = srcSize.width * scale;
+              final drawH = srcSize.height * scale;
+
+              final g = newPage.graphics;
+              final state = g.save();
+              // 1. Move pivot to exact center of page
+              g.translateTransform(pW / 2, pH / 2);
+              // 2. Rotate around center
+              if (rot != 0) {
+                g.rotateTransform(rot.toDouble());
+              }
+              // 3. Center template at pivot
+              g.translateTransform(-drawW / 2, -drawH / 2);
+              // 4. Draw template with preserved aspect ratio
+              g.drawPdfTemplate(template, Offset.zero, Size(drawW, drawH));
+              g.restore(state);
+            }
           }
+        }
+      } else if (loadedDoc != null) {
+        for (final pageNum in newPageOrder) {
+          final zeroIndex = pageNum - 1;
+          if (zeroIndex >= 0 && zeroIndex < loadedDoc.pages.count) {
+            final srcPage = loadedDoc.pages[zeroIndex];
+            final srcSize = srcPage.size;
+            final template = srcPage.createTemplate();
+            final rot = ((pageRotations[pageNum] ?? 0) % 360 + 360) % 360;
 
-          newPage.graphics.drawPdfTemplate(
-            template,
-            Offset.zero,
-            Size(newPage.size.width, newPage.size.height),
-          );
+            final newPage = outputDoc.pages.add();
+            final pW = newPage.size.width;
+            final pH = newPage.size.height;
+
+            final isQuarterTurn = (rot == 90 || rot == 270);
+            final boundingW = isQuarterTurn ? srcSize.height : srcSize.width;
+            final boundingH = isQuarterTurn ? srcSize.width : srcSize.height;
+
+            final scale = math.min(pW / boundingW, pH / boundingH);
+            final drawW = srcSize.width * scale;
+            final drawH = srcSize.height * scale;
+
+            final g = newPage.graphics;
+            final state = g.save();
+            g.translateTransform(pW / 2, pH / 2);
+            if (rot != 0) {
+              g.rotateTransform(rot.toDouble());
+            }
+            g.translateTransform(-drawW / 2, -drawH / 2);
+            g.drawPdfTemplate(template, Offset.zero, Size(drawW, drawH));
+            g.restore(state);
+          }
         }
       }
 
@@ -396,7 +491,7 @@ class PdfToolkitService {
       final savedBytes = await outputDoc.save();
       await outputFile.writeAsBytes(savedBytes);
 
-      loadedDoc.dispose();
+      loadedDoc?.dispose();
       outputDoc.dispose();
 
       return outputFile;
@@ -422,4 +517,73 @@ class PdfToolkitService {
       return 1;
     }
   }
+
+  /// Renders a real image thumbnail of a specific 1-indexed PDF page.
+  static Future<Uint8List?> renderPdfPageThumbnail(String pdfPath, int pageNumber) async {
+    try {
+      final doc = await pdfx.PdfDocument.openFile(pdfPath);
+      final page = await doc.getPage(pageNumber);
+      final pageImage = await page.render(
+        width: page.width / 1.5,
+        height: page.height / 1.5,
+        format: pdfx.PdfPageImageFormat.jpeg,
+      );
+      await page.close();
+      await doc.close();
+      return pageImage?.bytes;
+    } catch (e) {
+      debugPrint('Error rendering PDF thumbnail: $e');
+      return null;
+    }
+  }
 }
+
+/// Model representing a single page in the Organize Pages tool.
+class OrganizePageModel {
+  final String id;
+  final int originalPageIndex; // 1-based original index
+  final String? imagePath; // Path if it's an inserted camera/gallery image
+  final bool isBlankPage;
+  final bool isInsertedImage;
+  Uint8List? thumbnailBytes;
+  String title;
+  int rotation; // 0, 90, 180, 270
+  bool isSelected;
+
+  OrganizePageModel({
+    required this.id,
+    required this.originalPageIndex,
+    this.imagePath,
+    this.isBlankPage = false,
+    this.isInsertedImage = false,
+    this.thumbnailBytes,
+    required this.title,
+    this.rotation = 0,
+    this.isSelected = false,
+  });
+
+  OrganizePageModel copyWith({
+    String? id,
+    int? originalPageIndex,
+    String? imagePath,
+    bool? isBlankPage,
+    bool? isInsertedImage,
+    Uint8List? thumbnailBytes,
+    String? title,
+    int? rotation,
+    bool? isSelected,
+  }) {
+    return OrganizePageModel(
+      id: id ?? this.id,
+      originalPageIndex: originalPageIndex ?? this.originalPageIndex,
+      imagePath: imagePath ?? this.imagePath,
+      isBlankPage: isBlankPage ?? this.isBlankPage,
+      isInsertedImage: isInsertedImage ?? this.isInsertedImage,
+      thumbnailBytes: thumbnailBytes ?? this.thumbnailBytes,
+      title: title ?? this.title,
+      rotation: rotation ?? this.rotation,
+      isSelected: isSelected ?? this.isSelected,
+    );
+  }
+}
+
