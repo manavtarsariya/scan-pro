@@ -86,7 +86,13 @@ class ScannerService {
           build: (pw.Context context) {
             return pw.FullPage(
               ignoreMargins: true,
-              child: pw.Image(image, fit: pw.BoxFit.contain),
+              child: pw.Center(
+                child: pw.Image(
+                  image,
+                  fit: pw.BoxFit.contain,
+                  alignment: pw.Alignment.center,
+                ),
+              ),
             );
           },
         ),
@@ -118,72 +124,40 @@ class ScannerService {
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(32),
+        margin: pw.EdgeInsets.zero,
         build: (pw.Context context) {
-          return pw.Column(
-            mainAxisAlignment: pw.MainAxisAlignment.center,
-            crossAxisAlignment: pw.CrossAxisAlignment.center,
-            children: [
-              // Front Side Label & Card
-              pw.Container(
-                alignment: pw.Alignment.center,
-                child: pw.Text(
-                  'FRONT SIDE',
-                  style: pw.TextStyle(
-                    fontSize: 10,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.grey700,
+          return pw.Center(
+            child: pw.Column(
+              mainAxisAlignment: pw.MainAxisAlignment.center,
+              crossAxisAlignment: pw.CrossAxisAlignment.center,
+              children: [
+                // Front Side Image (Clean, No Border, Centered)
+                pw.Container(
+                  width: 400,
+                  height: 260,
+                  alignment: pw.Alignment.center,
+                  child: pw.Image(
+                    frontImage,
+                    fit: pw.BoxFit.contain,
+                    alignment: pw.Alignment.center,
                   ),
                 ),
-              ),
-              pw.SizedBox(height: 6),
-              pw.Container(
-                height: 230,
-                width: 360,
-                decoration: pw.BoxDecoration(
-                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
-                  border: pw.Border.all(color: PdfColors.grey400, width: 1),
-                ),
-                child: pw.ClipRRect(
-                  horizontalRadius: 10,
-                  verticalRadius: 10,
-                  child: pw.Center(
-                    child: pw.Image(frontImage, fit: pw.BoxFit.contain),
-                  ),
-                ),
-              ),
 
-              pw.SizedBox(height: 40),
+                pw.SizedBox(height: 36),
 
-              // Back Side Label & Card
-              pw.Container(
-                alignment: pw.Alignment.center,
-                child: pw.Text(
-                  'BACK SIDE',
-                  style: pw.TextStyle(
-                    fontSize: 10,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.grey700,
+                // Back Side Image (Clean, No Border, Centered)
+                pw.Container(
+                  width: 400,
+                  height: 260,
+                  alignment: pw.Alignment.center,
+                  child: pw.Image(
+                    backImage,
+                    fit: pw.BoxFit.contain,
+                    alignment: pw.Alignment.center,
                   ),
                 ),
-              ),
-              pw.SizedBox(height: 6),
-              pw.Container(
-                height: 230,
-                width: 360,
-                decoration: pw.BoxDecoration(
-                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
-                  border: pw.Border.all(color: PdfColors.grey400, width: 1),
-                ),
-                child: pw.ClipRRect(
-                  horizontalRadius: 10,
-                  verticalRadius: 10,
-                  child: pw.Center(
-                    child: pw.Image(backImage, fit: pw.BoxFit.contain),
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           );
         },
       ),

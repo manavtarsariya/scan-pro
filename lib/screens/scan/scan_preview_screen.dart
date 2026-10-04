@@ -201,7 +201,7 @@ class _ScanPreviewScreenState extends State<ScanPreviewScreen> {
               ),
             ),
 
-            // Middle: Image PageView
+            // Middle: Image PageView (A4 Ratio Sheet + Centered Image)
             Expanded(
               child: _imagePaths.isEmpty
                   ? const Center(child: Text('No pages scanned', style: TextStyle(color: Colors.white70)))
@@ -215,25 +215,37 @@ class _ScanPreviewScreenState extends State<ScanPreviewScreen> {
                       itemBuilder: (context, index) {
                         final imageFile = File(_imagePaths[index]);
                         return Center(
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: Colors.black,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.5),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 8),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            child: AspectRatio(
+                              aspectRatio: 1 / 1.4142, // Standard A4 Paper Ratio
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.45),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                            clipBehavior: Clip.antiAlias,
-                            child: Image.file(
-                              imageFile,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) => const Center(
-                                child: Icon(Icons.broken_image_rounded, color: Colors.white54, size: 48),
+                                clipBehavior: Clip.antiAlias,
+                                child: InteractiveViewer(
+                                  minScale: 1.0,
+                                  maxScale: 3.5,
+                                  child: Center(
+                                    child: Image.file(
+                                      imageFile,
+                                      fit: BoxFit.contain,
+                                      alignment: Alignment.center,
+                                      errorBuilder: (context, error, stackTrace) => const Center(
+                                        child: Icon(Icons.broken_image_rounded, color: Colors.black38, size: 48),
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
